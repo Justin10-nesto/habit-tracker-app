@@ -1,0 +1,208 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Dashboard | Admin{% endblock %}
+{% block admin_title %}Dashboard{% endblock %}
+
+{% block admin_actions %}
+<div class="btn-toolbar mb-2 mb-md-0">
+    <div class="btn-group me-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
+        <span data-feather="calendar" class="align-text-bottom"></span>
+        This week
+    </button>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<!-- Welcome Message -->
+<div class="alert alert-info">
+    <h4>Welcome, {{ request.user.username }}!</h4>
+    <p>Here's your habit tracking summary for today.</p>
+</div>
+
+<!-- Stats Overview -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-bg-primary mb-3">
+            <div class="card-header">Active Habits</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ active_habits_count }}</h5>
+                <p class="card-text">Habits you're currently tracking</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-success mb-3">
+            <div class="card-header">Active Streaks</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ active_streaks_count }}</h5>
+                <p class="card-text">Ongoing habit streaks</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-warning mb-3">
+            <div class="card-header">Daily Habits</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ daily_habits_count }}</h5>
+                <p class="card-text">Habits scheduled for daily tracking</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-info mb-3">
+            <div class="card-header">Completed Today</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ completed_today }}</h5>
+                <p class="card-text">Habits completed today</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Level and Progress -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                User Level
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Level {{ request.user.points.level|default:"1" }}</h5>
+                
+                {% with points_total=request.user.points.total_points|default:0 %}
+                {% with level_progress=points_total|divisibleby:1000 %}
+                {% with next_level=request.user.points.level|add:1|default:2 %}
+                
+                <div class="progress mb-2">
+                    <div class="progress-bar bg-success" role="progressbar" 
+                         style="width: {{ points_total|divisibleby:1000 }}%" 
+                         aria-valuenow="{{ points_total|divisibleby:1000 }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                    </div>
+                </div>
+                <p>{{ points_total|divisibleby:1000 }}% progress to Level {{ next_level }}</p>
+                <p class="text-muted">{{ points_total }} total points ({{ points_total|divisibleby:1000 }} / 1000 for next level)</p>
+                
+                {% endwith %}
+                {% endwith %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                Recent Badges
+            </div>
+            <div class="card-body">
+                {% if recent_badges %}
+                    <div class="row">
+                        {% for badge in recent_badges %}
+                            <div class="col-md-4 mb-3">
+                                <div class="text-center">
+                                    <div class="badge-icon mb-2">
+                                        <i class="{{ badge.badge.icon }} fa-2x"></i>
+                                    </div>
+                                    <h6>{{ badge.badge.name }}</h6>
+                                    <small class="text-muted">{{ badge.earned_date|date:"M d, Y" }}</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-center">No badges earned yet. Complete habits to earn badges!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Habits Progress -->
+<div class="card mb-4">
+    <div class="card-header">
+        Today's Habit Progress
+    </div>
+    <div class="card-body">
+        {% if today_habits %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Habit</th>
+                            <th>Progress</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for habit in today_habits %}
+                            <tr>
+                                <td>{{ habit.name }}</td>
+                                <td style="width: 50%;">
+                                    <div class="progress">
+                                        <div class="progress-bar {% if habit.progress >= 100 %}bg-success{% else %}bg-warning{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ habit.progress }}%;" 
+                                             aria-valuenow="{{ habit.progress }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            {{ habit.progress }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-center">No daily habits scheduled for today.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Links -->
+<div class="card">
+    <div class="card-header">
+        Quick Links
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <a href="{% url 'admin_my_habits' %}" class="btn btn-primary w-100 mb-2">
+                    <i class="fas fa-tasks me-2"></i> My Habits
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'admin_habits' %}" class="btn btn-success w-100 mb-2">
+                    <i class="fas fa-plus-circle me-2"></i> Add New Habit
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'admin_analytics' %}" class="btn btn-info w-100 mb-2">
+                    <i class="fas fa-chart-line me-2"></i> Analytics
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'admin_achievements' %}" class="btn btn-warning w-100 mb-2">
+                    <i class="fas fa-medal me-2"></i> Achievements
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block admin_extra_js %}
+<!-- Add any dashboard-specific JavaScript here -->
+<script>
+    // Initialize dashboard components
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Dashboard loaded successfully');
+    });
+</script>
+{% endblock %}

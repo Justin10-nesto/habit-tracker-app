@@ -1,0 +1,305 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="{{ theme|default:'light' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}Admin Panel | Habit Tracker{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Custom Admin CSS -->
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+    
+    <!-- Custom Styles -->
+    <style>
+        body {
+            overflow-x: hidden;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 250px;
+            z-index: 100;
+            padding: 0;
+            overflow-y: auto;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            transition: all 0.3s;
+        }
+        
+        .content-wrapper {
+            position: relative;
+            width: 100%;
+            margin-left: 250px;
+            min-height: 100vh;
+            transition: margin 0.3s;
+            padding: 0;
+        }
+        
+        /* Improved sidebar styling */
+        .sidebar .sidebar-heading {
+            padding: 1.2rem 1rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        
+        .sidebar-group {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 0.5rem;
+        }
+        
+        .sidebar-group-header {
+            color: #6c757d;
+            padding: 0.75rem 1rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+        
+        .sidebar .list-group-item {
+            padding: 0.75rem 1.25rem;
+            border: none;
+            border-radius: 0;
+        }
+        
+        .sidebar .list-group-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar .list-group-item.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-left: 4px solid #0d6efd;
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+            }
+            .content-wrapper {
+                margin-left: 60px;
+            }
+            .sidebar .sidebar-heading span,
+            .sidebar .list-group-item span {
+                display: none;
+            }
+            
+            .sidebar .list-group-item {
+                padding: 0.75rem;
+                text-align: center;
+            }
+            
+            .sidebar .list-group-item i {
+                margin-right: 0;
+                font-size: 1.1rem;
+            }
+        }
+        
+        .sidebar.toggled {
+            width: 0;
+            overflow: hidden;
+        }
+        
+        .content-wrapper.expanded {
+            margin-left: 0;
+        }
+        
+        #sidebarToggleTop {
+            margin: 0.5rem 1rem;
+        }
+    </style>
+    
+    {% if color_scheme %}
+    <link rel="stylesheet" href="{% static 'css/themes/'|add:color_scheme|add:'.css' %}">
+    {% endif %}
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Modernized Sidebar -->
+        <div class="sidebar bg-dark text-light">
+            <!-- Sidebar Brand -->
+            <div class="sidebar-heading d-flex align-items-center border-bottom">
+                <i class="fas fa-leaf fa-2x me-2 text-success"></i>
+                <div>
+                    <h4 class="mb-0">Habit Tracker</h4>
+                    <div class="small text-muted">Admin Panel</div>
+                </div>
+            </div>
+            
+            <!-- Sidebar Content -->
+            <div class="list-group list-group-flush">
+                <!-- Dashboard Group -->
+                <div class="sidebar-group">
+                    <div class="sidebar-group-header">Overview</div>
+                    <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action bg-dark text-light {% if active_page == 'dashboard' %}active{% endif %}">
+                        <i class="fas fa-tachometer-alt"></i> <span>Dashboard</span>
+                    </a>
+                </div>
+                
+                <!-- Habits Management Group -->
+                <div class="sidebar-group">
+                    <div class="sidebar-group-header">Habit Management</div>
+                    <a href="{% url 'admin_my_habits' %}" class="list-group-item list-group-item-action bg-dark text-light {% if active_page == 'my_habits' %}active{% endif %}">
+                        <i class="fas fa-check-circle"></i> <span>My Habits</span>
+                    </a>
+                    <a href="{% url 'admin_habits' %}" class="list-group-item list-group-item-action bg-dark text-light {% if active_page == 'habits' %}active{% endif %}">
+                        <i class="fas fa-list"></i> <span>Manage Habits</span>
+                    </a>
+                    <a href="{% url 'admin_categories' %}" class="list-group-item list-group-item-action bg-dark text-light {% if active_page == 'categories' %}active{% endif %}">
+                        <i class="fas fa-tags"></i> <span>Categories</span>
+                    </a>
+                </div>
+                
+                <!-- Data & Insights Group -->
+                <div class="sidebar-group">
+                    <div class="sidebar-group-header">Insights</div>
+                    <a href="{% url 'admin_analytics' %}" class="list-group-item list-group-item-action bg-dark text-light {% if active_page == 'analytics' %}active{% endif %}">
+                        <i class="fas fa-chart-line"></i> <span>Analytics</span>
+                    </a>
+                    <a href="{% url 'admin_achievements' %}" class="list-group-item list-group-item-action bg-dark text-light {% if active_page == 'achievements' %}active{% endif %}">
+                        <i class="fas fa-trophy"></i> <span>Achievements</span>
+                    </a>
+                </div>
+                
+                
+                <!-- Points & Rewards Group -->
+                <div class="sidebar-group">
+                    <div class="sidebar-group-header">Points & Rewards</div>
+                    <a href="{% url 'points' %}" class="list-group-item list-group-item-action bg-dark text-light {% if active_page == 'points' %}active{% endif %}">
+                        <i class="fas fa-coins"></i> <span>Points Dashboard</span>
+                    </a>
+                    <a href="{% url 'rewards' %}" class="list-group-item list-group-item-action bg-dark text-light {% if active_page == 'rewards' %}active{% endif %}">
+                        <i class="fas fa-gift"></i> <span>Rewards</span>
+                    </a>
+                    <a href="{% url 'transactions' %}" class="list-group-item list-group-item-action bg-dark text-light {% if active_page == 'transactions' %}active{% endif %}">
+                        <i class="fas fa-exchange-alt"></i> <span>Transactions</span>
+                    </a>
+                    <a href="{% url 'redemptions' %}" class="list-group-item list-group-item-action bg-dark text-light {% if active_page == 'redemptions' %}active{% endif %}">
+                        <i class="fas fa-shopping-cart"></i> <span>My Redemptions</span>
+                    </a>
+                </div>
+                
+                <!-- System Group -->
+                <div class="sidebar-group">
+                    <div class="sidebar-group-header">System</div>
+                    <a href="{% url 'admin_settings' %}" class="list-group-item list-group-item-action bg-dark text-light {% if active_page == 'settings' %}active{% endif %}">
+                        <i class="fas fa-cog"></i> <span>Settings</span>
+                    </a>
+                    <a href="{% url 'logout' %}" class="list-group-item list-group-item-action bg-dark text-light">
+                        <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content-wrapper bg-light">
+            <!-- Top Navbar -->
+            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                <button id="sidebarToggleTop" class="btn btn-link rounded-circle mr-3">
+                    <i class="fa fa-bars"></i>
+                </button>
+                
+                <!-- Navbar user info -->
+                <ul class="navbar-nav ms-auto">
+                    <!-- User Info -->
+                    <li class="nav-item dropdown no-arrow">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                           data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="mr-2 d-none d-lg-inline text-gray-600 small me-2">{{ request.user.username }}</span>
+                            {% if request.user.profile.profile_picture %}
+                                <img class="img-profile rounded-circle" width="32" height="32"
+                                     src="{{ request.user.profile.profile_picture.url }}">
+                            {% else %}
+                                <i class="fas fa-user-circle fa-fw"></i>
+                            {% endif %}
+                        </a>
+                        <!-- Dropdown - User Information -->
+                        <div class="dropdown-menu dropdown-menu-end shadow animated--grow-in"
+                             aria-labelledby="userDropdown">
+                            <a class="dropdown-item" href="{% url 'admin_settings' %}">
+                                <i class="fas fa-cog fa-sm fa-fw mr-2 text-gray-400"></i>
+                                Settings
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{% url 'logout' %}">
+                                <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                Logout
+                            </a>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Main Content Container -->
+            <div class="container-fluid px-4 pb-4">
+                <!-- Messages -->
+                {% if messages %}
+                    <div class="messages mb-4">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <!-- Page Content -->
+                <div id="page-content">
+                    {% block content %}
+                    <div class="alert alert-warning">
+                        <strong>Warning:</strong> This page's content block is empty. 
+                        Please ensure the template extends correctly from base.html and defines a content block.
+                    </div>
+                    {% endblock %}
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white mt-4">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; Habit Tracker {% now "Y" %}</span>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Bootstrap core JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Basic functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Admin JS loaded');
+            
+            // Toggle sidebar
+            const sidebarToggle = document.getElementById('sidebarToggleTop');
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    document.querySelector('.sidebar').classList.toggle('toggled');
+                    document.querySelector('.content-wrapper').classList.toggle('expanded');
+                });
+            }
+            
+            // Debug info
+            console.log('Current URL:', window.location.pathname);
+            console.log('Content block exists:', document.getElementById('page-content') !== null);
+            console.log('Content block children:', document.getElementById('page-content').childElementCount);
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

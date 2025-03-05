@@ -1,0 +1,25 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{% block admin_title %}Admin Panel{% endblock %}</h1>
+    {% block admin_actions %}{% endblock %}
+</div>
+
+{% block admin_content %}
+    <!-- This block will be overridden by child templates -->
+    <div class="alert alert-info">
+        <p>No content defined for this admin page.</p>
+    </div>
+{% endblock %}
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    {% block admin_extra_js %}{% endblock %}
+{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    {% block admin_extra_css %}{% endblock %}
+{% endblock %}

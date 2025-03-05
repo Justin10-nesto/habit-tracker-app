@@ -1,0 +1,162 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{% load point_filters %}
+
+{% block title %}My Redemptions | Habit Tracker{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>My Redemptions</h1>
+        <div>
+            <a href="{% url 'rewards' %}" class="btn btn-outline-primary me-2">Back to Rewards</a>
+            <a href="{% url 'points' %}" class="btn btn-outline-secondary">Points Dashboard</a>
+        </div>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <!-- Redemptions Table -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Reward</th>
+                            <th>Points Spent</th>
+                            <th>Status</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for redemption in page_obj %}
+                            <tr>
+                                <td>{{ redemption.redeemed_at|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    <strong>{{ redemption.reward.name }}</strong>
+                                    <div class="small text-muted">{{ redemption.reward.description|truncatechars:100 }}</div>
+                                </td>
+                                <td>{{ redemption.points_spent }}</td>
+                                <td>
+                                    {% if redemption.status == 'PENDING' %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    {% elif redemption.status == 'FULFILLED' %}
+                                        <span class="badge bg-success">Fulfilled</span>
+                                        {% if redemption.fulfilled_at %}
+                                            <div class="small text-muted">{{ redemption.fulfilled_at|date:"M d, Y" }}</div>
+                                        {% endif %}
+                                    {% elif redemption.status == 'CANCELLED' %}
+                                        <span class="badge bg-danger">Cancelled</span>
+                                    {% elif redemption.status == 'REFUNDED' %}
+                                        <span class="badge bg-info">Refunded</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if redemption.notes %}
+                                        {{ redemption.notes }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5">
+                                    <i class="fas fa-gift fa-3x mb-3 text-muted"></i>
+                                    <h4>No Redemptions Yet</h4>
+                                    <p class="mb-3">You haven't redeemed any rewards yet.</p>
+                                    <a href="{% url 'rewards' %}" class="btn btn-primary">Browse Rewards</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">First</span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">Previous</span>
+                    </li>
+                {% endif %}
+                
+                {% for i in page_obj.paginator.page_range %}
+                    {% if page_obj.number == i %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ i }}</span>
+                        </li>
+                    {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Next</span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">Last</span>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+    
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Redemption Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Redemption Status Meanings:</h6>
+                    <ul>
+                        <li><strong>Pending</strong>: Your redemption is being processed</li>
+                        <li><strong>Fulfilled</strong>: Your reward has been delivered</li>
+                        <li><strong>Cancelled</strong>: The redemption was cancelled</li>
+                        <li><strong>Refunded</strong>: Points have been returned to your account</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Need Help?</h6>
+                    <p>If you haven't received your reward or have questions about a redemption, please contact support.</p>
+                    <a href="#" class="btn btn-outline-primary">Contact Support</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

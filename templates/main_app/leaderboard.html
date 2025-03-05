@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Leaderboard | Habit Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Habit Tracker Leaderboard</h4>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs mb-3">
+                    <li class="nav-item">
+                        <a class="nav-link {% if period == 'DAILY' %}active{% endif %}" href="{% url 'leaderboard' %}?period=DAILY">Daily</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if period == 'WEEKLY' %}active{% endif %}" href="{% url 'leaderboard' %}?period=WEEKLY">Weekly</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if period == 'MONTHLY' %}active{% endif %}" href="{% url 'leaderboard' %}?period=MONTHLY">Monthly</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if period == 'ALL_TIME' %}active{% endif %}" href="{% url 'leaderboard' %}?period=ALL_TIME">All Time</a>
+                    </li>
+                </ul>
+                
+                <div class="text-center mb-3">
+                    <h5>
+                        {% if period == 'DAILY' %}
+                            Today's Leaders ({{ start_date|date:"F d, Y" }})
+                        {% elif period == 'WEEKLY' %}
+                            This Week's Leaders ({{ start_date|date:"F d" }} - {{ end_date|date:"F d, Y" }})
+                        {% elif period == 'MONTHLY' %}
+                            This Month's Leaders ({{ start_date|date:"F Y" }})
+                        {% else %}
+                            All Time Leaders
+                        {% endif %}
+                    </h5>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-8 offset-md-2">
+                        <div class="row">
+                            {% if leaderboard %}
+                                {% for entry in leaderboard|slice:":3" %}
+                                    <div class="col-md-4 text-center">
+                                        <div class="position-relative mb-3">
+                                            <div class="avatar-circle 
+                                                {% if forloop.counter == 1 %}avatar-gold{% elif forloop.counter == 2 %}avatar-silver{% else %}avatar-bronze{% endif %}
+                                            ">
+                                                <span class="avatar-text">{{ entry.user.username|make_list|first|upper }}</span>
+                                            </div>
+                                            <div class="position-absolute top-0 end-0 translate-middle">
+                                                <span class="badge rounded-circle 
+                                                    {% if forloop.counter == 1 %}bg-warning text-dark{% elif forloop.counter == 2 %}bg-secondary{% else %}bg-danger{% endif %}
+                                                ">{{ forloop.counter }}</span>
+                                            </div>
+                                        </div>
+                                        <h5>{{ entry.user.username }}</h5>
+                                        <p class="text-muted">{{ entry.points }} points</p>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if leaderboard %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>User</th>
+                                    <th>Points</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in leaderboard|slice:"3:" %}
+                                    <tr {% if entry.user == request.user %}class="table-primary"{% endif %}>
+                                        <td>{{ forloop.counter|add:3 }}</td>
+                                        <td>{{ entry.user.username }}</td>
+                                        <td>{{ entry.points }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if user_entry and user_rank > 10 %}
+                        <div class="mt-4 mb-2">
+                            <h6 class="text-center">Your Position</h6>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr class="table-primary">
+                                        <td>{{ user_rank }}</td>
+                                        <td>{{ request.user.username }}</td>
+                                        <td>{{ user_entry.points }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">No data available for this period yet. Start tracking habits to appear on the leaderboard!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .avatar-circle {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0 auto;
+    }
+    
+    .avatar-gold {
+        background: linear-gradient(145deg, #FFD700, #FFA500);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+    }
+    
+    .avatar-silver {
+        background: linear-gradient(145deg, #C0C0C0, #A9A9A9);
+        box-shadow: 0 0 10px rgba(192, 192, 192, 0.7);
+    }
+    
+    .avatar-bronze {
+        background: linear-gradient(145deg, #CD7F32, #A46628);
+        box-shadow: 0 0 10px rgba(205, 127, 50, 0.7);
+    }
+    
+    .avatar-text {
+        font-size: 36px;
+        font-weight: bold;
+        color: white;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    }
+</style>
+{% endblock %}

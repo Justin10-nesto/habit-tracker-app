@@ -1,0 +1,209 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Achievements | Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Achievements & Badges</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleShowAll">Show All</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleEarned">Show Earned</button>
+        </div>
+    </div>
+</div>
+
+<!-- Achievement Stats -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                Achievements Progress
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0">Achievements Earned</h6>
+                        <div class="progress mt-2 mb-3" style="height: 10px">
+                            {% with achievement_percent=user_achievements|length|floatformat:0|default:"0" %}
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ achievement_percent }}%;"
+                                 aria-valuenow="{{ achievement_percent }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ achievement_percent }}%
+                            </div>
+                            {% endwith %}
+                        </div>
+                        <small class="text-muted">{{ user_achievements|length }} of {{ all_achievements|length }} achievements earned</small>
+                    </div>
+                    <div class="text-end ms-3">
+                        <h4 class="mb-0">{{ user_achievements|length }}</h4>
+                        <span class="text-muted">earned</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                Badges Progress
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0">Badges Earned</h6>
+                        <div class="progress mt-2 mb-3" style="height: 10px">
+                            {% with badge_percent=user_badges|length|floatformat:0|default:"0" %}
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ badge_percent }}%;"
+                                 aria-valuenow="{{ badge_percent }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ badge_percent }}%
+                            </div>
+                            {% endwith %}
+                        </div>
+                        <small class="text-muted">{{ user_badges|length }} of {{ all_badges|length }} badges earned</small>
+                    </div>
+                    <div class="text-end ms-3">
+                        <h4 class="mb-0">{{ user_badges|length }}</h4>
+                        <span class="text-muted">earned</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Achievements Section -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-trophy me-1"></i>
+        Achievements
+    </div>
+    <div class="card-body">
+        {% if all_achievements %}
+            <div class="row">
+                {% for achievement in all_achievements %}
+                    {% with achievement_status=achievement|map_achievement_status:user_achievements %}
+                    <div class="col-lg-4 col-md-6 mb-4 achievement-card {% if not achievement_status.earned %}not-earned{% endif %}">
+                        <div class="card h-100 {% if achievement_status.earned %}border-success{% else %}border-light{% endif %}">
+                            <div class="card-header d-flex justify-content-between align-items-center 
+                                      {% if achievement_status.earned %}bg-success text-white{% endif %}">
+                                <h5 class="mb-0">{{ achievement.name }}</h5>
+                                {% if achievement_status.earned %}
+                                    <span class="badge bg-light text-dark">Earned</span>
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <div class="achievement-icon mb-3 text-center">
+                                    <i class="{{ achievement.icon }} fa-3x {% if achievement_status.earned %}text-success{% else %}text-muted{% endif %}"></i>
+                                </div>
+                                <p>{{ achievement.description }}</p>
+                                
+                                <div class="progress mb-3" style="height: 10px;">
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         style="width: {{ achievement_status.progress }}%;" 
+                                         aria-valuenow="{{ achievement_status.progress }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100"></div>
+                                </div>
+                                
+                                {% if achievement_status.earned %}
+                                    <p class="text-muted mb-0">
+                                        Earned on {{ achievement_status.date|date:"F d, Y" }}
+                                    </p>
+                                {% else %}
+                                    <p class="text-muted mb-0">Not yet earned</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endwith %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-trophy fa-3x mb-3 text-muted"></i>
+                <p>No achievements available yet. Keep using the app to unlock achievements!</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Badges Section -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-medal me-1"></i>
+        Badges
+    </div>
+    <div class="card-body">
+        {% if all_badges %}
+            <div class="row">
+                {% for badge in all_badges %}
+                    {% with badge_status=badge|map_badge_status:user_badges %}
+                    <div class="col-md-3 col-sm-6 mb-4 badge-card {% if not badge_status.earned %}not-earned{% endif %}">
+                        <div class="card h-100 text-center {% if badge_status.earned %}border-warning{% else %}border-light{% endif %}">
+                            <div class="card-header {% if badge_status.earned %}bg-warning{% endif %}">
+                                <h5 class="mb-0">{{ badge.name }}</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="badge-icon mb-3">
+                                    <i class="{{ badge.icon }} fa-4x {% if badge_status.earned %}text-warning{% else %}text-muted{% endif %}"></i>
+                                </div>
+                                <p>{{ badge.description }}</p>
+                                
+                                {% if badge_status.earned %}
+                                    <p class="text-muted mb-0">
+                                        Earned on {{ badge_status.date|date:"F d, Y" }}
+                                    </p>
+                                {% else %}
+                                    <p class="text-muted mb-0">Complete the requirements to earn this badge</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endwith %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-medal fa-3x mb-3 text-muted"></i>
+                <p>No badges available yet. Complete habits to earn badges!</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block admin_extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle between showing all or only earned achievements/badges
+        const toggleShowAll = document.getElementById('toggleShowAll');
+        const toggleEarned = document.getElementById('toggleEarned');
+        
+        if (toggleShowAll) {
+            toggleShowAll.addEventListener('click', function() {
+                document.querySelectorAll('.achievement-card, .badge-card').forEach(card => {
+                    card.style.display = 'block';
+                });
+                toggleShowAll.classList.add('active');
+                toggleEarned.classList.remove('active');
+            });
+        }
+        
+        if (toggleEarned) {
+            toggleEarned.addEventListener('click', function() {
+                document.querySelectorAll('.achievement-card, .badge-card').forEach(card => {
+                    if (card.classList.contains('not-earned')) {
+                        card.style.display = 'none';
+                    } else {
+                        card.style.display = 'block';
+                    }
+                });
+                toggleEarned.classList.add('active');
+                toggleShowAll.classList.remove('active');
+            });
+        }
+    });
+</script>
+{% endblock %}

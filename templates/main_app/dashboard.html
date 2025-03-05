@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% load gamification_extras %}
+
+{% block title %}Dashboard | Habit Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">Welcome, {{ user.first_name|default:user.username }}!</h4>
+            </div>
+            <div class="card-body">
+                <p>This is your personal habit tracker dashboard. Here you can track and manage your habits.</p>
+                <hr>
+                <h5>Your Profile Information:</h5>
+                <dl class="row">
+                    <dt class="col-sm-3">Name:</dt>
+                    <dd class="col-sm-9">{{ user.first_name }} {{ user.last_name }}</dd>
+                    
+                    <dt class="col-sm-3">Username:</dt>
+                    <dd class="col-sm-9">{{ user.username }}</dd>
+                    
+                    <dt class="col-sm-3">Email:</dt>
+                    <dd class="col-sm-9">{{ user.email }}</dd>
+                    
+                    <dt class="col-sm-3">Gender:</dt>
+                    <dd class="col-sm-9">{{ user.profile.get_gender_display|default:"Not specified" }}</dd>
+                    
+                    <dt class="col-sm-3">Date of Birth:</dt>
+                    <dd class="col-sm-9">{{ user.profile.date_of_birth|date:"F d, Y"|default:"Not specified" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Staff/Admin quick access -->
+    {% if user.is_staff %}
+    <div class="alert alert-info d-flex justify-content-between align-items-center">
+        <div>
+            <strong>Staff Access:</strong> You have administrator privileges.
+        </div>
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-sm btn-primary">Go to Admin Panel</a>
+    </div>
+    {% endif %}
+    
+    <!-- Gamification Summary -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Your Progress</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="level-indicator">
+                        <h2 class="mb-0">Level {{ user.points.level|default:"1" }}</h2>
+                        <div class="level-badge">{{ user.points.level|default:"1" }}</div>
+                    </div>
+                    <h4>{{ user.points.total_points|default:"0" }} Points</h4>
+                </div>
+                
+                <div class="progress mb-3">
+                    <div class="progress-bar bg-success" role="progressbar" 
+                         style="width: {{ user.points.total_points|default:0|divisibleby:1000|yesno:"0,"|default:""}}{{ user.points.total_points|default:0|modulo:1000|floatformat:"0" }}%" 
+                         aria-valuenow="{{ user.points.total_points|default:0|modulo:1000|floatformat:"0" }}" aria-valuemin="0" aria-valuemax="1000"></div>
+                </div>
+                
+                <p class="text-center">
+                    <a href="{% url 'gamification' %}" class="btn btn-primary">View Your Progress</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">Leaderboard Position</h5>
+            </div>
+            <div class="card-body text-center">
+                <h3 class="mb-3">
+                    {% if user_rank %}
+                        #{{ user_rank }} Rank
+                    {% else %} 
+                        Not Ranked Yet
+                    {% endif %}
+                </h3>
+                <p>Start completing habits to climb up the leaderboard!</p>
+                <p>
+                    <a href="{% url 'leaderboard' %}" class="btn btn-warning">View Leaderboard</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-2">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Your Habits</h5>
+                <a href="#" class="btn btn-sm btn-light">Add New Habit</a>
+            </div>
+            <div class="card-body">
+                {% if user_habits %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Habit</th>
+                                    <th>Category</th>
+                                    <th>Periodicity</th>
+                                    <th>Streak</th>
+                                    <th>Last Completed</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for habit in user_habits %}
+                                    <tr>
+                                        <td>{{ habit.habit.name }}</td>
+                                        <td>{{ habit.habit.category.name|default:"Uncategorized" }}</td>
+                                        <td>{{ habit.habit.get_periodicity_display }}</td>
+                                        <td>
+                                            <span class="badge {% if habit.streak > 0 %}bg-success{% else %}bg-secondary{% endif %}">
+                                                {{ habit.streak }} days
+                                            </span>
+                                        </td>
+                                        <td>{{ habit.last_completed|date:"M d, Y"|default:"Never" }}</td>
+                                        <td>
+                                            <a href="#" class="btn btn-sm btn-success">Complete</a>
+                                            <a href="#" class="btn btn-sm btn-primary">Details</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">You haven't added any habits yet. Get started by adding your first habit!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

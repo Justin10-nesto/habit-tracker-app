@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load gamification_extras %}
+
+{% block title %}Your Progress | Habit Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Your Progress</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center mb-4">
+                        <div class="display-4">Level {{ user_points.level }}</div>
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {{ user_points.total_points|divisibleby:1000|yesno:"0,"|default:""}}{{ user_points.total_points|modulo:1000|floatformat:"0" }}%" 
+                                 aria-valuenow="{{ user_points.total_points|modulo:1000|floatformat:"0" }}" aria-valuemin="0" aria-valuemax="1000"></div>
+                        </div>
+                        <small class="text-muted">{{ points_needed }} points until Level {{ next_level }}</small>
+                        <div class="mt-3">
+                            <h3>{{ user_points.total_points }} Points</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <h5>Level Progress</h5>
+                        <p>As you earn points by completing habits, earning badges, and unlocking achievements, you'll level up your profile. Each level requires 1,000 points.</p>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Level</th>
+                                    <th>Points Required</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in "12345"|make_list %}
+                                    {% with level_num=forloop.counter|add:user_points.level|add:"-3" %}
+                                        <tr {% if level_num == user_points.level %}class="table-primary"{% endif %}>
+                                            <td>{{ level_num }}</td>
+                                            <td>{{ level_num|add:"-1"|multiply:1000 }}</td>
+                                            <td>
+                                                {% if level_num < user_points.level %} 
+                                                    <span class="badge bg-success">Achieved</span>
+                                                {% elif level_num == user_points.level %}
+                                                    <span class="badge bg-primary">Current</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Future</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endwith %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">Your Badges</h4>
+            </div>
+            <div class="card-body">
+                {% if badges %}
+                    <div class="row">
+                        {% for user_badge in badges %}
+                            <div class="col-md-4 col-sm-6 mb-3 text-center">
+                                <div class="badge-icon mb-2">
+                                    <i class="fa fa-award fa-3x" style="color: gold;"></i>
+                                </div>
+                                <h5>{{ user_badge.badge.name }}</h5>
+                                <p class="small text-muted">{{ user_badge.badge.description }}</p>
+                                <div class="badge bg-info">+{{ user_badge.badge.points_awarded }} Points</div>
+                                <div class="small text-muted mt-1">Earned {{ user_badge.earned_date|date:"M d, Y" }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">You haven't earned any badges yet. Keep working on your habits to earn badges!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">Your Achievements</h4>
+            </div>
+            <div class="card-body">
+                {% if achievements %}
+                    <div class="row">
+                        {% for user_achievement in achievements %}
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fa fa-trophy" style="color: goldenrod;"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-1">{{ user_achievement.achievement.name }}</h5>
+                                        <p class="small text-muted mb-1">{{ user_achievement.achievement.description }}</p>
+                                        <div class="badge bg-info">+{{ user_achievement.achievement.points_awarded }} Points</div>
+                                        <div class="small text-muted">Earned {{ user_achievement.earned_date|date:"M d, Y" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">You haven't earned any achievements yet. Keep tracking your habits to earn achievements!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">Recent Point Transactions</h4>
+            </div>
+            <div class="card-body">
+                {% if recent_transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Type</th>
+                                    <th>Points</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in recent_transactions %}
+                                    <tr>
+                                        <td>{{ transaction.timestamp|date:"M d, Y H:i" }}</td>
+                                        <td>{{ transaction.description }}</td>
+                                        <td><span class="badge bg-secondary">{{ transaction.get_transaction_type_display }}</span></td>
+                                        <td class="text-{% if transaction.amount > 0 %}success{% else %}danger{% endif %}">
+                                            {{ transaction.amount }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">You haven't earned any points yet. Complete habits to start earning points!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

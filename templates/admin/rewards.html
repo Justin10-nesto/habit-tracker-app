@@ -1,0 +1,139 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Rewards | Habit Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reward-card {
+        transition: transform 0.2s ease;
+        height: 100%;
+    }
+    .reward-card:hover {
+        transform: translateY(-5px);
+    }
+    .reward-image {
+        height: 200px;
+        object-fit: cover;
+        background-color: #f8f9fa;
+    }
+    .reward-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+    .redeem-btn {
+        transition: all 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Reward Shop</h1>
+        <div>
+            <span class="fs-5 me-2">Your Points: <strong>{{ user_points.total_points }}</strong></span>
+            <a href="{% url 'points' %}" class="btn btn-outline-primary">Back to Points Dashboard</a>
+        </div>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    {% if rewards %}
+        <div class="row">
+            {% for item in rewards %}
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm reward-card">
+                        {% if item.reward.image %}
+                            <img src="{{ item.reward.image.url }}" class="card-img-top reward-image" alt="{{ item.reward.name }}">
+                        {% else %}
+                            <div class="reward-image d-flex justify-content-center align-items-center">
+                                <i class="fas fa-gift fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <span class="reward-badge badge bg-primary">{{ item.reward.points_required }} Points</span>
+                        
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">{{ item.reward.name }}</h5>
+                            <p class="card-text flex-grow-1">{{ item.reward.description }}</p>
+                            
+                            {% if item.can_afford %}
+                                <form method="post" action="{% url 'redeem_reward' item.reward.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success w-100 redeem-btn">
+                                        Redeem Now
+                                    </button>
+                                </form>
+                            {% else %}
+                                <div class="text-center">
+                                    <p class="text-danger mb-1">
+                                        <i class="fas fa-lock me-1"></i>
+                                        You need {{ item.points_needed }} more points
+                                    </p>
+                                    <button disabled class="btn btn-secondary w-100">
+                                        Cannot Afford
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if item.reward.stock > 0 and item.reward.stock < 10 %}
+                            <div class="card-footer text-center text-muted">
+                                <small>Limited Stock: {{ item.reward.stock }} remaining</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-gift fa-4x mb-3 text-muted"></i>
+                <h3>No Rewards Available</h3>
+                <p class="text-muted mb-0">Check back later for new rewards to redeem with your points.</p>
+            </div>
+        </div>
+    {% endif %}
+    
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">How to Earn Points</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="text-center">
+                        <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+                        <h5>Complete Habits</h5>
+                        <p class="mb-0">Earn 10 points each time you complete a habit</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="text-center">
+                        <i class="fas fa-fire fa-2x mb-2 text-warning"></i>
+                        <h5>Build Streaks</h5>
+                        <p class="mb-0">Bonus points for maintaining habit streaks</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <i class="fas fa-trophy fa-2x mb-2 text-info"></i>
+                        <h5>Earn Achievements</h5>
+                        <p class="mb-0">Special achievements award additional points</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

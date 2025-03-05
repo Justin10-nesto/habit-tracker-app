@@ -1,0 +1,248 @@
+{% extends 'admin/base_admin.html' %}
+{% load habit_extras %}
+
+{% block title %}My Habits | Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">My Habits</h1>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<!-- Calendar View -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Today's Habits</h5>
+    </div>
+    <div class="card-body">
+        {% if user_habits %}
+            <div class="row">
+                {% for habit in user_habits %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ habit.habit.name }}</h5>
+                                <p class="card-text text-muted small">{{ habit.habit.description|truncatechars:100 }}</p>
+                                
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <span class="badge {% if habit.streak > 0 %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {{ habit.streak }} day streak
+                                    </span>
+                                    
+                                    {% if habit.id in completed_today %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> Completed
+                                        </span>
+                                    {% else %}
+                                        <form method="post" action="{% url 'admin_my_habits' %}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="complete">
+                                            <input type="hidden" name="habit_id" value="{{ habit.id }}">
+                                            <button type="submit" class="btn btn-sm btn-success">Complete Today</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-footer text-muted">
+                                Last completed: {{ habit.last_completed|date:"M d, Y"|default:"Never" }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <p class="mb-0">You don't have any habits yet. Add some habits to start tracking!</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Habit List -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">All My Habits</h5>
+        <a href="{% url 'admin_habits' %}" class="btn btn-sm btn-primary">Add New Habit</a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Habit</th>
+                        <th>Category</th>
+                        <th>Periodicity</th>
+                        <th>Current Streak</th>
+                        <th>Status</th>
+                        <th>Reminder</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if user_habits %}
+                        {% for habit in user_habits %}
+                            <tr>
+                                <td>{{ habit.habit.name }}</td>
+                                <td>{{ habit.habit.category.name|default:"Uncategorized" }}</td>
+                                <td>{{ habit.habit.get_periodicity_display }}</td>
+                                <td>{{ habit.streak }} days</td>
+                                <td>
+                                    {% if habit.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% if habit.id in recent_missed %}
+                                            <span class="badge bg-danger ms-1" data-bs-toggle="tooltip" 
+                                                title="Missed on {% for date in recent_missed|get_item:habit.id %}{{ date|date:'M d' }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+                                                {{ recent_missed|get_item:habit.id|length }} missed
+                                            </span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if habit.id in reminders %}
+                                        <span class="badge bg-info">
+                                            {{ reminders|get_item:habit.id|get_attr:"reminder_time"|time:"g:i A" }}
+                                            {% if reminders|get_item:habit.id|get_attr:"reminder_date" %}
+                                                on {{ reminders|get_item:habit.id|get_attr:"reminder_date"|date:"M d, Y" }}
+                                            {% else %}
+                                                (Daily)
+                                            {% endif %}
+                                        </span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-1" 
+                                                data-bs-toggle="modal" data-bs-target="#reminderModal{{ habit.id }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <form method="post" action="{% url 'admin_my_habits' %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="delete_reminder">
+                                            <input type="hidden" name="reminder_id" value="{{ reminders|get_item:habit.id|get_attr:'id' }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                data-bs-toggle="modal" data-bs-target="#reminderModal{{ habit.id }}">
+                                            <i class="fas fa-bell"></i> Set Reminder
+                                        </button>
+                                    {% endif %}
+                                    
+                                    <!-- Reminder Modal -->
+                                    <div class="modal fade" id="reminderModal{{ habit.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Set Reminder for "{{ habit.habit.name }}"</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <form method="post" action="{% url 'admin_my_habits' %}">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="action" value="set_reminder">
+                                                        <input type="hidden" name="habit_id" value="{{ habit.id }}">
+                                                        
+                                                        <div class="mb-3">
+                                                            <label for="reminder_time{{ habit.id }}" class="form-label">Reminder Time</label>
+                                                            <input type="time" class="form-control" id="reminder_time{{ habit.id }}" name="reminder_time" 
+                                                                value="{% if habit.id in reminders %}{{ reminders|get_item:habit.id|get_attr:'reminder_time'|time:'H:i' }}{% else %}08:00{% endif %}" required>
+                                                            <div class="form-text">Set the time when you want to be reminded.</div>
+                                                        </div>
+                                                        
+                                                        <div class="mb-3 form-check">
+                                                            <input type="checkbox" class="form-check-input" id="recurring{{ habit.id }}" name="recurring" 
+                                                                {% if habit.id in reminders and not reminders|get_item:habit.id|get_attr:'reminder_date' %}checked{% endif %}
+                                                                onchange="toggleDateField('{{ habit.id }}')">
+                                                            <label class="form-check-label" for="recurring{{ habit.id }}">Recurring Daily Reminder</label>
+                                                        </div>
+                                                        
+                                                        <div class="mb-3" id="dateField{{ habit.id }}" style="{% if habit.id in reminders and reminders|get_item:habit.id|get_attr:'reminder_date' %}{% else %}display: none;{% endif %}">
+                                                            <label for="reminder_date{{ habit.id }}" class="form-label">Reminder Date</label>
+                                                            <input type="date" class="form-control" id="reminder_date{{ habit.id }}" name="reminder_date" 
+                                                                value="{% if habit.id in reminders and reminders|get_item:habit.id|get_attr:'reminder_date' %}{{ reminders|get_item:habit.id|get_attr:'reminder_date'|date:'Y-m-d' }}{% endif %}">
+                                                            <div class="form-text">Set a specific date for a one-time reminder.</div>
+                                                        </div>
+                                                        
+                                                        <div class="text-end">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-primary">Save Reminder</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-chart-line"></i>
+                                    </button>
+                                    <form method="post" action="{% url 'admin_habits' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="remove_from_my_habits">
+                                        <input type="hidden" name="habit_id" value="{{ habit.habit.id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-times-circle"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-3">No habits found.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block admin_extra_js %}
+<script>
+    function toggleDateField(habitId) {
+        const dateField = document.getElementById('dateField' + habitId);
+        const checkbox = document.getElementById('recurring' + habitId);
+        const dateInput = document.getElementById('reminder_date' + habitId);
+        
+        if (checkbox.checked) {
+            dateField.style.display = 'none';
+            dateInput.value = '';  // Clear date if recurring is selected
+        } else {
+            dateField.style.display = 'block';
+            // Set default date to tomorrow if no date is selected
+            if (!dateInput.value) {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                dateInput.valueAsDate = tomorrow;
+            }
+        }
+    }
+    
+    // Initialize all date fields and tooltips on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Initialize date fields
+        const checkboxes = document.querySelectorAll('input[name="recurring"]');
+        checkboxes.forEach(function(checkbox) {
+            const habitId = checkbox.id.replace('recurring', '');
+            toggleDateField(habitId);
+        });
+    });
+</script>
+{% endblock %}

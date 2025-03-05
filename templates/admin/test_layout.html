@@ -1,0 +1,69 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Test Layout | Admin{% endblock %}
+
+{% block content %}
+<div class="bg-primary text-white p-3 mb-3">
+    <h2>Template Inheritance Test</h2>
+    <p>If you can see this content with proper styling, the base template is working correctly.</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        Layout Debug Information
+    </div>
+    <div class="card-body">
+        <h5 class="card-title">Current Template Structure</h5>
+        <p>This template extends: <code>admin/base.html</code></p>
+        <p>Content is inside block: <code>content</code></p>
+        
+        <h5 class="card-title mt-4">Layout Structure</h5>
+        <ul>
+            <li><code>body</code>
+                <ul>
+                    <li><code>.d-flex</code> (main container)
+                        <ul>
+                            <li><code>.sidebar</code> (left sidebar)</li>
+                            <li><code>.content-wrapper</code> (right content area)
+                                <ul>
+                                    <li><code>nav.navbar</code> (top navigation)</li>
+                                    <li><code>.container-fluid</code> (content container)
+                                        <ul>
+                                            <li><code>#page-content</code> (where this text is displayed)</li>
+                                        </ul>
+                                    </li>
+                                    <li><code>footer</code> (page footer)</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        
+        <h5 class="card-title mt-4">Visual Test Elements</h5>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="alert alert-success">Success Alert</div>
+            </div>
+            <div class="col-md-4">
+                <div class="alert alert-warning">Warning Alert</div>
+            </div>
+            <div class="col-md-4">
+                <div class="alert alert-danger">Danger Alert</div>
+            </div>
+        </div>
+        
+        <button class="btn btn-primary mt-3" id="testToggleBtn">Test Toggle Sidebar</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('testToggleBtn').addEventListener('click', function() {
+        document.querySelector('.sidebar').classList.toggle('toggled');
+        document.querySelector('.content-wrapper').classList.toggle('expanded');
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,171 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Analytics | Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Analytics</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="downloadData">Export Data</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="printReport">Print Report</button>
+        </div>
+        <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="periodDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <span data-feather="calendar"></span>
+                {{ dashboard_data.title.title }}
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="periodDropdown">
+                <li><a class="dropdown-item period-select" href="#" data-period="week">This Week</a></li>
+                <li><a class="dropdown-item period-select" href="#" data-period="month">This Month</a></li>
+                <li><a class="dropdown-item period-select" href="#" data-period="quarter">This Quarter</a></li>
+                <li><a class="dropdown-item period-select" href="#" data-period="year">This Year</a></li>
+                <li><a class="dropdown-item period-select" href="#" data-period="all">All Time</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% if not has_data %}
+<!-- No Data Alert -->
+<div class="alert alert-info mb-4">
+    <h4 class="alert-heading">No habit data available yet!</h4>
+    <p>Start tracking your habits to see analytics and insights here.</p>
+    <hr>
+    <p class="mb-0">
+        <a href="{% url 'admin_habits' %}" class="btn btn-primary">
+            <i class="fas fa-plus-circle"></i> Create Your First Habit
+        </a>
+    </p>
+</div>
+{% endif %}
+
+<!-- Overview Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Total Habits</h5>
+                <h2 class="display-4">{{ total_habits }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Completion Rate</h5>
+                <h2 class="display-4">{{ dashboard_data.completions.rate|floatformat:1 }}%</h2>
+                <p class="card-text">{% if dashboard_data.completions.change > 0 %}+{% endif %}{{ dashboard_data.completions.change|floatformat:1 }}% from last period</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Longest Streak</h5>
+                <h2 class="display-4">{{ dashboard_data.habits.max_streak }}</h2>
+                <p class="card-text">days in a row</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Total Points</h5>
+                <h2 class="display-4">{{ dashboard_data.points.total }}</h2>
+                <p class="card-text">{% if dashboard_data.points.change > 0 %}+{% endif %}{{ dashboard_data.points.change }} from last period</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Individual Habits Performance -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-list me-1"></i>
+                Individual Habits Performance
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Habit</th>
+                                <th>Current Streak</th>
+                                <th>Completion Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for habit_stat in habits %}
+                            <tr>
+                                <td>{{ habit_stat.habit }}</td>
+                                <td>{{ habit_stat.streak }} days</td>
+                                <td>{{ habit_stat.completion_rate|floatformat:1 }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Distribution -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-1"></i>
+                Categories
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for category in categories %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ category.name }}</h5>
+                                <p class="card-text">{{ category.description|default:"No description" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Parse the dashboard data
+    const dashboardData = {{ dashboard_data|safe }};
+    
+    // Setup event listeners for period selection
+    document.querySelectorAll('.period-select').forEach(item => {
+        item.addEventListener('click', event => {
+            event.preventDefault();
+            const period = event.target.dataset.period;
+            window.location.href = `?period=${period}`;
+        });
+    });
+
+    // Setup export and print functionality
+    document.getElementById('downloadData').addEventListener('click', () => {
+        // Implement export functionality
+        alert('Export functionality will be implemented soon!');
+    });
+
+    document.getElementById('printReport').addEventListener('click', () => {
+        window.print();
+    });
+</script>
+{% endblock %}

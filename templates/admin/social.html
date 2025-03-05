@@ -1,0 +1,161 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Social | Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Social</h1>
+</div>
+
+<div class="row">
+    <!-- Leaderboard -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Weekly Leaderboard</h5>
+            </div>
+            <div class="card-body">
+                {% if leaderboard %}
+                    <div class="row mb-4">
+                        <!-- Top 3 users with special styling -->
+                        {% for entry in leaderboard|slice:":3" %}
+                            <div class="col-md-4">
+                                <div class="card text-center border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="position-relative mb-3">
+                                            <div class="rounded-circle mx-auto d-flex align-items-center justify-content-center 
+                                                {% if forloop.counter == 1 %}bg-warning text-dark{% elif forloop.counter == 2 %}bg-secondary text-white{% else %}bg-danger text-white{% endif %}" 
+                                                style="width: 80px; height: 80px; font-size: 32px;">
+                                                {{ forloop.counter }}
+                                            </div>
+                                        </div>
+                                        <h5>{{ entry.user.username }}</h5>
+                                        <p class="text-muted">{{ entry.points }} points</p>
+                                        <p class="small">Level {{ entry.user.points.level|default:1 }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Rest of the leaderboard -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>User</th>
+                                    <th>Level</th>
+                                    <th>Points</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in leaderboard|slice:"3:" %}
+                                    <tr {% if entry.user == request.user %}class="table-primary"{% endif %}>
+                                        <td>{{ forloop.counter|add:3 }}</td>
+                                        <td>{{ entry.user.username }}</td>
+                                        <td>{{ entry.user.points.level|default:"1" }}</td>
+                                        <td>{{ entry.points }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">No leaderboard data available yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Alexis earned a badge</h6>
+                            <small class="text-muted">3 days ago</small>
+                        </div>
+                        <p class="mb-1">Earned the "Weekly Warrior" badge</p>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Marco hit a 10-day streak</h6>
+                            <small class="text-muted">4 days ago</small>
+                        </div>
+                        <p class="mb-1">10-day streak on "Morning Meditation"</p>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Sofia reached Level 5</h6>
+                            <small class="text-muted">1 week ago</small>
+                        </div>
+                        <p class="mb-1">Earned 5,000 points total</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Friends -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Friends</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Search friends...">
+                        <button class="btn btn-outline-primary" type="button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <button class="btn btn-primary ms-2">Add</button>
+                </div>
+                
+                <div class="list-group list-group-flush">
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary rounded-circle text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                A
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Alexis Smith</h6>
+                                <small class="text-muted">Level 4 • 3,800 points</small>
+                            </div>
+                        </div>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-success rounded-circle text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                M
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Marco Lee</h6>
+                                <small class="text-muted">Level 3 • 2,500 points</small>
+                            </div>
+                        </div>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-info rounded-circle text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                S
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Sofia Rodriguez</h6>
+                                <small class="text-muted">Level 5 • 5,200 points</small>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

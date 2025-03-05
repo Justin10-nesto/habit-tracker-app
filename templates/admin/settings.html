@@ -1,0 +1,595 @@
+{% extends 'admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Settings | Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-nav .nav-link {
+        color: #495057;
+        border-radius: 0;
+        border-left: 3px solid transparent;
+    }
+    
+    .settings-nav .nav-link.active {
+        color: #0d6efd;
+        background-color: #f8f9fa;
+        border-left: 3px solid #0d6efd;
+    }
+    
+    .form-switch .form-check-input {
+        width: 3em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Settings</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="resetSettings">Reset to Default</button>
+        </div>
+    </div>
+</div>
+
+{% if messages %}
+<div class="row">
+    <div class="col-12">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="settings-nav nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                    <button class="nav-link active" id="profile-tab" data-bs-toggle="pill" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="true">
+                        <i class="fas fa-user me-2"></i> Profile
+                    </button>
+                    <button class="nav-link" id="notifications-tab" data-bs-toggle="pill" data-bs-target="#notifications" type="button" role="tab" aria-controls="notifications" aria-selected="false">
+                        <i class="fas fa-bell me-2"></i> Notifications
+                    </button>
+                    <button class="nav-link" id="security-tab" data-bs-toggle="pill" data-bs-target="#security" type="button" role="tab" aria-controls="security" aria-selected="false">
+                        <i class="fas fa-shield-alt me-2"></i> Security
+                    </button>
+                    <button class="nav-link" id="appearance-tab" data-bs-toggle="pill" data-bs-target="#appearance" type="button" role="tab" aria-controls="appearance" aria-selected="false">
+                        <i class="fas fa-paint-brush me-2"></i> Appearance
+                    </button>
+                    <button class="nav-link" id="data-tab" data-bs-toggle="pill" data-bs-target="#data" type="button" role="tab" aria-controls="data" aria-selected="false">
+                        <i class="fas fa-database me-2"></i> Data & Privacy
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="tab-content" id="v-pills-tabContent">
+            <!-- Profile Settings -->
+            <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Profile Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{% url 'admin_settings' %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="profile">
+                            
+                            <div class="mb-3 row">
+                                <label for="profile_picture" class="col-sm-3 col-form-label">Profile Picture</label>
+                                <div class="col-sm-9">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            {% if user.profile.profile_picture %}
+                                                <img src="{{ user.profile.profile_picture.url }}" class="rounded-circle" width="80" height="80" alt="Profile Picture">
+                                            {% else %}
+                                                <div class="rounded-circle bg-secondary d-flex justify-content-center align-items-center text-white" style="width: 80px; height: 80px;">
+                                                    <i class="fas fa-user fa-2x"></i>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <input type="file" class="form-control" id="profile_picture" name="profile_picture">
+                                            <div class="form-text">Maximum file size: 2MB. Supported formats: JPG, PNG</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3 row">
+                                <label for="first_name" class="col-sm-3 col-form-label">First Name</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3 row">
+                                <label for="last_name" class="col-sm-3 col-form-label">Last Name</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3 row">
+                                <label for="email" class="col-sm-3 col-form-label">Email</label>
+                                <div class="col-sm-9">
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3 row">
+                                <label for="bio" class="col-sm-3 col-form-label">Bio</label>
+                                <div class="col-sm-9">
+                                    <textarea class="form-control" id="bio" name="bio" rows="3">{{ user.profile.bio|default:'' }}</textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3 row">
+                                <label for="timezone" class="col-sm-3 col-form-label">Timezone</label>
+                                <div class="col-sm-9">
+                                    <select class="form-select" id="timezone" name="timezone">
+                                        {% for tz in timezones %}
+                                            <option value="{{ tz.0 }}" {% if user.profile.timezone == tz.0 %}selected{% endif %}>{{ tz.1 }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">Save Profile Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notification Settings -->
+            <div class="tab-pane fade" id="notifications" role="tabpanel" aria-labelledby="notifications-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Notification Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{% url 'admin_settings' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="notifications">
+                            
+                            <div class="mb-4">
+                                <h6 class="fw-bold mb-3">Email Notifications</h6>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="email_reminders" name="email_reminders" 
+                                           {% if user.profile.notification_preferences.email_reminders %}checked{% endif %}>
+                                    <label class="form-check-label" for="email_reminders">
+                                        Habit reminders via email
+                                    </label>
+                                    <div class="form-text">Receive email notifications for upcoming habits</div>
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="email_streak_updates" name="email_streak_updates"
+                                           {% if user.profile.notification_preferences.email_streak_updates %}checked{% endif %}>
+                                    <label class="form-check-label" for="email_streak_updates">
+                                        Streak updates via email
+                                    </label>
+                                    <div class="form-text">Get notified when you achieve milestone streaks</div>
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="email_achievements" name="email_achievements"
+                                           {% if user.profile.notification_preferences.email_achievements %}checked{% endif %}>
+                                    <label class="form-check-label" for="email_achievements">
+                                        Achievement notifications via email
+                                    </label>
+                                    <div class="form-text">Get notified when you earn new achievements</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h6 class="fw-bold mb-3">In-App Notifications</h6>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="inapp_reminders" name="inapp_reminders"
+                                           {% if user.profile.notification_preferences.inapp_reminders %}checked{% endif %}>
+                                    <label class="form-check-label" for="inapp_reminders">
+                                        In-app habit reminders
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="inapp_streak_updates" name="inapp_streak_updates"
+                                           {% if user.profile.notification_preferences.inapp_streak_updates %}checked{% endif %}>
+                                    <label class="form-check-label" for="inapp_streak_updates">
+                                        In-app streak updates
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="inapp_achievements" name="inapp_achievements"
+                                           {% if user.profile.notification_preferences.inapp_achievements %}checked{% endif %}>
+                                    <label class="form-check-label" for="inapp_achievements">
+                                        In-app achievement notifications
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h6 class="fw-bold mb-3">Notification Schedule</h6>
+                                
+                                <div class="row mb-3">
+                                    <label for="daily_digest_time" class="col-sm-3 col-form-label">Daily Digest Time</label>
+                                    <div class="col-sm-9">
+                                        <input type="time" class="form-control" id="daily_digest_time" name="daily_digest_time" 
+                                               value="{{ user.profile.notification_preferences.daily_digest_time|default:'08:00' }}">
+                                        <div class="form-text">Time for your daily habit summary</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="quiet_hours_enabled" name="quiet_hours_enabled"
+                                           {% if user.profile.notification_preferences.quiet_hours_enabled %}checked{% endif %}>
+                                    <label class="form-check-label" for="quiet_hours_enabled">
+                                        Enable Quiet Hours
+                                    </label>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <label for="quiet_hours_start" class="col-sm-3 col-form-label">Quiet Hours Start</label>
+                                    <div class="col-sm-9">
+                                        <input type="time" class="form-control" id="quiet_hours_start" name="quiet_hours_start"
+                                               value="{{ user.profile.notification_preferences.quiet_hours_start|default:'22:00' }}">
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <label for="quiet_hours_end" class="col-sm-3 col-form-label">Quiet Hours End</label>
+                                    <div class="col-sm-9">
+                                        <input type="time" class="form-control" id="quiet_hours_end" name="quiet_hours_end"
+                                               value="{{ user.profile.notification_preferences.quiet_hours_end|default:'07:00' }}">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">Save Notification Settings</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Security Settings -->
+            <div class="tab-pane fade" id="security" role="tabpanel" aria-labelledby="security-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Security Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{% url 'admin_settings' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="security">
+                            
+                            <div class="mb-4">
+                                <h6 class="fw-bold mb-3">Change Password</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="current_password" class="form-label">Current Password</label>
+                                    <input type="password" class="form-control" id="current_password" name="current_password">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="new_password" class="form-label">New Password</label>
+                                    <input type="password" class="form-control" id="new_password" name="new_password">
+                                    <div class="form-text">
+                                        Password must be at least 8 characters and include a mix of letters, numbers, and symbols.
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary">Change Password</button>
+                                </div>
+                            </div>
+                        </form>
+                        
+                        <hr>
+                        
+                        <form method="post" action="{% url 'admin_settings' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="two_factor">
+                            
+                            <div class="mb-4">
+                                <h6 class="fw-bold mb-3">Two-Factor Authentication</h6>
+                                
+                                {% if user.profile.two_factor_enabled %}
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-lock me-2"></i>
+                                        Two-factor authentication is enabled for your account.
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-danger">Disable Two-Factor Authentication</button>
+                                {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-unlock me-2"></i>
+                                        Two-factor authentication is not enabled for your account.
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-success">Enable Two-Factor Authentication</button>
+                                {% endif %}
+                            </div>
+                        </form>
+                        
+                        <hr>
+                        
+                        <form method="post" action="{% url 'admin_settings' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="sessions">
+                            
+                            <div>
+                                <h6 class="fw-bold mb-3">Active Sessions</h6>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Device</th>
+                                                <th>Location</th>
+                                                <th>Last Active</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>
+                                                    <i class="fas fa-laptop me-2"></i>
+                                                    Chrome on Windows
+                                                </td>
+                                                <td>United States</td>
+                                                <td>Current session</td>
+                                                <td>
+                                                    <span class="badge bg-success">Current</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <i class="fas fa-mobile-alt me-2"></i>
+                                                    Safari on iPhone
+                                                </td>
+                                                <td>United States</td>
+                                                <td>2 days ago</td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-sign-out-alt"></i> Log Out
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="text-end mt-3">
+                                    <button type="submit" name="logout_all" value="1" class="btn btn-danger">
+                                        <i class="fas fa-sign-out-alt me-1"></i> Log Out of All Other Sessions
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Appearance Settings -->
+            <div class="tab-pane fade" id="appearance" role="tabpanel" aria-labelledby="appearance-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Appearance Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{% url 'admin_settings' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="appearance">
+                            
+                            <div class="mb-4">
+                                <h6 class="fw-bold mb-3">Theme</h6>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="theme" id="theme_light" value="light"
+                                           {% if user.profile.appearance_settings.theme == 'light' or not user.profile.appearance_settings.theme %}checked{% endif %}>
+                                    <label class="form-check-label" for="theme_light">
+                                        <i class="fas fa-sun me-2"></i> Light Theme
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="theme" id="theme_dark" value="dark"
+                                           {% if user.profile.appearance_settings.theme == 'dark' %}checked{% endif %}>
+                                    <label class="form-check-label" for="theme_dark">
+                                        <i class="fas fa-moon me-2"></i> Dark Theme
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="theme" id="theme_system" value="system"
+                                           {% if user.profile.appearance_settings.theme == 'system' %}checked{% endif %}>
+                                    <label class="form-check-label" for="theme_system">
+                                        <i class="fas fa-laptop me-2"></i> Use System Setting
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h6 class="fw-bold mb-3">Color Scheme</h6>
+                                
+                                <div class="d-flex flex-wrap gap-3 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input visually-hidden" type="radio" name="color_scheme" id="color_blue" value="blue"
+                                               {% if user.profile.appearance_settings.color_scheme == 'blue' or not user.profile.appearance_settings.color_scheme %}checked{% endif %}>
+                                        <label class="form-check-label d-block" for="color_blue">
+                                            <div class="rounded-circle bg-primary" style="width: 40px; height: 40px; cursor: pointer;"></div>
+                                            <div class="text-center mt-1">Blue</div>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check">
+                                        <input class="form-check-input visually-hidden" type="radio" name="color_scheme" id="color_green" value="green"
+                                               {% if user.profile.appearance_settings.color_scheme == 'green' %}checked{% endif %}>
+                                        <label class="form-check-label d-block" for="color_green">
+                                            <div class="rounded-circle bg-success" style="width: 40px; height: 40px; cursor: pointer;"></div>
+                                            <div class="text-center mt-1">Green</div>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check">
+                                        <input class="form-check-input visually-hidden" type="radio" name="color_scheme" id="color_purple" value="purple"
+                                               {% if user.profile.appearance_settings.color_scheme == 'purple' %}checked{% endif %}>
+                                        <label class="form-check-label d-block" for="color_purple">
+                                            <div class="rounded-circle" style="width: 40px; height: 40px; cursor: pointer; background-color: #6f42c1;"></div>
+                                            <div class="text-center mt-1">Purple</div>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check">
+                                        <input class="form-check-input visually-hidden" type="radio" name="color_scheme" id="color_orange" value="orange"
+                                               {% if user.profile.appearance_settings.color_scheme == 'orange' %}checked{% endif %}>
+                                        <label class="form-check-label d-block" for="color_orange">
+                                            <div class="rounded-circle bg-warning" style="width: 40px; height: 40px; cursor: pointer;"></div>
+                                            <div class="text-center mt-1">Orange</div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h6 class="fw-bold mb-3">Display Options</h6>
+                                
+                                <div class="mb-3 row">
+                                    <label for="dashboard_display" class="col-sm-4 col-form-label">Default Dashboard View</label>
+                                    <div class="col-sm-8">
+                                        <select class="form-select" id="dashboard_display" name="dashboard_display">
+                                            <option value="day" {% if user.profile.appearance_settings.dashboard_display == 'day' %}selected{% endif %}>Daily View</option>
+                                            <option value="week" {% if user.profile.appearance_settings.dashboard_display == 'week' %}selected{% endif %}>Weekly View</option>
+                                            <option value="month" {% if user.profile.appearance_settings.dashboard_display == 'month' or not user.profile.appearance_settings.dashboard_display %}selected{% endif %}>Monthly View</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="compact_view" name="compact_view"
+                                           {% if user.profile.appearance_settings.compact_view %}checked{% endif %}>
+                                    <label class="form-check-label" for="compact_view">
+                                        Compact View
+                                    </label>
+                                    <div class="form-text">Display more items on screen with reduced spacing</div>
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="show_animations" name="show_animations"
+                                           {% if user.profile.appearance_settings.show_animations or user.profile.appearance_settings.show_animations is None %}checked{% endif %}>
+                                    <label class="form-check-label" for="show_animations">
+                                        Show Animations
+                                    </label>
+                                    <div class="form-text">Enable or disable UI animations</div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">Save Appearance Settings</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Data & Privacy Settings -->
+            <div class="tab-pane fade" id="data" role="tabpanel" aria-labelledby="data-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Data & Privacy Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{% url 'admin_settings' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="privacy">
+                            
+                            <div class="mb-4">
+                                <h6 class="fw-bold mb-3">Privacy Options</h6>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="public_profile" name="public_profile"
+                                           {% if user.profile.privacy_settings.public_profile %}checked{% endif %}>
+                                    <label class="form-check-label" for="public_profile">
+                                        Public Profile
+                                    </label>
+                                    <div class="form-text">Allow other users to view your profile</div>
+                                </div>
+                                
+                                <div class="mb-3 row">
+                                    <label for="profile_visibility" class="col-sm-4 col-form-label">Profile Visibility</label>
+                                    <div class="col-sm-8">
+                                        <select class="form-select" id="profile_visibility" name="profile_visibility">
+                                            <option value="everyone" {% if user.profile.privacy_settings.profile_visibility == 'everyone' %}selected{% endif %}>Everyone</option>
+                                            <option value="friends" {% if user.profile.privacy_settings.profile_visibility == 'friends' %}selected{% endif %}>Friends Only</option>
+                                            <option value="private" {% if user.profile.privacy_settings.profile_visibility == 'private' or not user.profile.privacy_settings.profile_visibility %}selected{% endif %}>Private</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="show_on_leaderboard" name="show_on_leaderboard"
+                                           {% if user.profile.privacy_settings.show_on_leaderboard %}checked{% endif %}>
+                                    <label class="form-check-label" for="show_on_leaderboard">
+                                        Show on Leaderboards
+                                    </label>
+                                    <div class="form-text">Allow your achievements to be displayed on leaderboards</div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">Save Privacy Settings</button>
+                            </div>
+                        </form>
+                        
+                        <hr>
+                        
+                        <form method="post" action="{% url 'admin_settings' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="data">
+                            
+                            <div class="mb-4">
+                                <h6 class="fw-bold mb-3">Data Management</h6>
+                                
+                                <div class="mb-3">
+                                    <button type="submit" name="export_data" value="1" class="btn btn-outline-primary">
+                                        <i class="fas fa-download me-1"></i> Export Data
+                                    </button>
+                                    <div class="form-text">Download a copy of your data</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <button type="submit" name="delete_data" value="1" class="btn btn-outline-danger">
+                                        <i class="fas fa-trash-alt me-1"></i> Delete Data
+                                    </button>
+                                    <div class="form-text">Permanently delete your data</div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

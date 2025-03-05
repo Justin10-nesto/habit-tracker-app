@@ -1,0 +1,134 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{% load point_filters %}
+
+{% block title %}Point Transactions | Habit Tracker{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Point Transactions</h1>
+        <a href="{% url 'points' %}" class="btn btn-outline-primary">Back to Points Dashboard</a>
+    </div>
+    
+    <!-- Filter Form -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label for="type" class="form-label">Filter by Type:</label>
+                    <select name="type" id="type" class="form-select">
+                        <option value="ALL" {% if selected_type == 'ALL' or not selected_type %}selected{% endif %}>All Types</option>
+                        {% for type in transaction_types %}
+                            <option value="{{ type }}" {% if selected_type == type %}selected{% endif %}>
+                                {{ type|transaction_type }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Apply Filter</button>
+                </div>
+                <div class="col-md-2">
+                    {% if selected_type %}
+                        <a href="{% url 'transactions' %}" class="btn btn-outline-secondary w-100">Clear Filter</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Transactions Table -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>Points</th>
+                            <th>Reference</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in page_obj %}
+                            <tr>
+                                <td>{{ transaction.timestamp|date:"M d, Y H:i" }}</td>
+                                <td>{{ transaction.description }}</td>
+                                <td>{{ transaction.transaction_type|transaction_type }}</td>
+                                <td class="{% if transaction.amount > 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ transaction.amount|point_format }}
+                                </td>
+                                <td>
+                                    {% if transaction.reference_id %}
+                                        <code class="small">{{ transaction.reference_id|truncatechars:10 }}</code>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4">No transactions found.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if selected_type %}&type={{ selected_type }}{% endif %}">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if selected_type %}&type={{ selected_type }}{% endif %}">Previous</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">First</span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">Previous</span>
+                    </li>
+                {% endif %}
+                
+                {% for i in page_obj.paginator.page_range %}
+                    {% if page_obj.number == i %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ i }}</span>
+                        </li>
+                    {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% if selected_type %}&type={{ selected_type }}{% endif %}">{{ i }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if selected_type %}&type={{ selected_type }}{% endif %}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if selected_type %}&type={{ selected_type }}{% endif %}">Last</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Next</span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">Last</span>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %}
