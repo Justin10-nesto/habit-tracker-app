@@ -70,6 +70,8 @@ A comprehensive web application for tracking and managing personal habits, with 
 
 ## Usage
 
+## Usage
+
 ### SEEDERS
 1. Run the following command to seed the database:
    ```bash
@@ -77,6 +79,15 @@ A comprehensive web application for tracking and managing personal habits, with 
    python manage.py seed_users
    python manage.py seed_user_habits
    ```
+
+### Login Credentials for Testing
+After running the seeders, you can use the following test accounts to log in and explore the application without creating new data:
+
+| Username       | Email                       | Password    |
+|----------------|-----------------------------|-------------|
+| justin_lasway  | jastinlasway10@gmail.com    | password123 |
+| anzigare       | anzigare@gmail.com          | anzigar@234 |
+| siaka_thomas   | siakathomas12@gmail.com     | er24@#$     |
 
 ### User Registration
 1. Access the registration page

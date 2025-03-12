@@ -146,24 +146,31 @@ class TestHabitScheduler(TestCase):
     def test_streak_history_created(self):
         """Test that streak history is recorded when streak is reset"""
         yesterday = timezone.now().date() - timedelta(days=1)
-        
-        # Set up a streak
+    
+        # Set up a streak and last completed date
         streak_length = 5
         self.daily_user_habit.streak = streak_length
+        self.daily_user_habit.last_completed = yesterday
         self.daily_user_habit.save()
-        
+    
         # Run the check
         check_missed_habits(start_date=yesterday)
-        
+    
         # Verify streak history was created
         streak_history = HabitStreak.objects.filter(
             user_habit=self.daily_user_habit,
-            streak_length=streak_length
+            streak_length=streak_length,
+            end_date=yesterday
         ).first()
-        
+    
         self.assertIsNotNone(streak_history)
+        self.assertEqual(streak_history.streak_length, streak_length)
         self.assertEqual(streak_history.end_date, yesterday)
         self.assertEqual(streak_history.start_date, yesterday - timedelta(days=streak_length))
+    
+        # Verify streak was reset
+        self.daily_user_habit.refresh_from_db()
+        self.assertEqual(self.daily_user_habit.streak, 0)
     
     def test_system_downtime_recovery(self):
         """Test that the system properly handles multiple missed days"""

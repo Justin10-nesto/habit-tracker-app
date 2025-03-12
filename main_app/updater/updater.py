@@ -3,12 +3,22 @@ from django_apscheduler.jobstores import DjangoJobStore
 from .scheduler import check_and_send_notifications, check_missed_habits
 from apscheduler.triggers.cron import CronTrigger
 
+_scheduler = None
+
 def start():
-    scheduler = BackgroundScheduler()
-    scheduler.add_jobstore(DjangoJobStore(), "default")
+    from django.apps import apps
+    if not apps.ready:
+        return
+        
+    global _scheduler
+    if _scheduler is not None:
+        return
+        
+    _scheduler = BackgroundScheduler()
+    _scheduler.add_jobstore(DjangoJobStore(), "default")
     
     # Run daily at 00:01 to check for habits that were missed yesterday
-    scheduler.add_job(
+    _scheduler.add_job(
         check_missed_habits,
         trigger=CronTrigger(hour=0, minute=1),
         id="check_missed_habits",
@@ -16,7 +26,7 @@ def start():
         replace_existing=True,
     )
     
-    scheduler.add_job(
+    _scheduler.add_job(
         check_and_send_notifications,
         trigger=CronTrigger(second=0),
         id="check_and_send_notifications",
@@ -24,4 +34,4 @@ def start():
         replace_existing=True,
     )
     
-    scheduler.start()
+    _scheduler.start()

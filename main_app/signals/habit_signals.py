@@ -21,6 +21,11 @@ def update_streak_on_completion(sender, instance, created, **kwargs):
         user_habit = instance.user_habit
         today = instance.completion_date
         
+        # Increment streak
+        user_habit.increment_streak()
+        user_habit.last_completed = today
+        user_habit.save()
+        
         # Update analytics
         analytics, _ = HabitAnalytics.objects.get_or_create(
             user=user_habit.user,

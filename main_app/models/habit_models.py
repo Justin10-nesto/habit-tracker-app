@@ -173,7 +173,7 @@ class MissedHabit(models.Model):
     id = models.CharField(primary_key=True, max_length=36, default=get_uuid)
     user_habit = models.ForeignKey(UserHabit, on_delete=models.CASCADE, related_name='missed_days', to_field='id')
     missed_date = models.DateField()
-    created_at = models.DateTimeField(default=datetime.utcnow)
+    created_at = models.DateTimeField(default=get_current_datetime)
     
     class Meta:
         unique_together = ['user_habit', 'missed_date']
