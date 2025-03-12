@@ -12,6 +12,7 @@ class Category(models.Model):
     """Categories for organizing habits"""
     id = models.CharField(primary_key=True, max_length=36, default=get_uuid)
     name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
     created_at = models.DateTimeField(default=get_current_datetime)
     
     class Meta:
@@ -50,6 +51,16 @@ class UserHabit(models.Model):
     is_active = models.BooleanField(default=True)
     start_date = models.DateField(default=get_current_date)
     last_completed = models.DateField(null=True, blank=True)
+    
+    def increment_streak(self):
+        """Increment the streak count"""
+        self.streak += 1
+        self.save()
+    
+    def reset_streak(self):
+        """Reset the streak count to zero"""
+        self.streak = 0
+        self.save()
     
     def __str__(self):
         return f"{self.user.username}'s {self.habit.name}"
@@ -94,15 +105,31 @@ class UserHabit(models.Model):
 
 
 class HabitCompletion(models.Model):
-    """Record of habit completion instances"""
+    """Record of habit completion"""
     id = models.CharField(primary_key=True, max_length=36, default=get_uuid)
-    user_habit = models.ForeignKey(UserHabit, on_delete=models.CASCADE, related_name='completions', to_field='id')
+    user_habit = models.ForeignKey(UserHabit, on_delete=models.CASCADE, related_name='completions')
     completion_date = models.DateField(default=get_current_date)
-    timestamp = models.DateTimeField(default=get_current_datetime)
+    created_at = models.DateTimeField(default=get_current_datetime)
     
     class Meta:
         unique_together = ['user_habit', 'completion_date']
     
+    def clean(self):
+        """Validate the completion record"""
+        super().clean()
+        # Check for existing completion on the same date
+        if HabitCompletion.objects.filter(
+            user_habit=self.user_habit,
+            completion_date=self.completion_date
+        ).exclude(id=self.id).exists():
+            raise ValidationError({
+                'completion_date': 'A completion record already exists for this habit on this date.'
+            })
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.user_habit} completed on {self.completion_date}"
 
@@ -114,6 +141,16 @@ class HabitStreak(models.Model):
     streak_length = models.IntegerField()
     start_date = models.DateField()
     end_date = models.DateField(null=True, blank=True)
+    
+    def clean(self):
+        """Validate that end_date is not before start_date"""
+        from django.core.exceptions import ValidationError
+        if self.end_date and self.end_date < self.start_date:
+            raise ValidationError('End date cannot be before start date.')
+    
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
     
     def __str__(self):
         status = "ongoing" if self.end_date is None else "ended"

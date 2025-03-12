@@ -32,7 +32,7 @@ class UserHabitAdmin(admin.ModelAdmin):
 
 @admin.register(HabitCompletion)
 class HabitCompletionAdmin(admin.ModelAdmin):
-    list_display = ['user_habit', 'completion_date', 'timestamp']
+    list_display = ['user_habit', 'completion_date']
     list_filter = ['completion_date']
     date_hierarchy = 'completion_date'
 

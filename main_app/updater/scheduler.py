@@ -8,16 +8,32 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def check_missed_habits():
+def check_missed_habits(start_date=None):
     """
     Checks for habits that should have been completed but weren't
-    and marks them as missed, updating streaks accordingly
+    and marks them as missed, updating streaks accordingly.
+    Handles system downtime by checking all dates from last operation to current date.
+    
+    Args:
+        start_date: Optional date to start checking from. If None, checks from yesterday.
     """
     today = timezone.now().date()
     
-    # ---------- DAILY HABITS ----------
-    yesterday = today - timedelta(days=1)
+    # If no start date provided, default to yesterday
+    if not start_date:
+        start_date = today - timedelta(days=1)
     
+    # Ensure start_date is not in the future
+    start_date = min(start_date, today - timedelta(days=1))
+    
+    # Generate list of dates to check
+    dates_to_check = []
+    current_date = start_date
+    while current_date < today:
+        dates_to_check.append(current_date)
+        current_date += timedelta(days=1)
+    
+    # ---------- DAILY HABITS ----------
     # Get all active daily habits
     daily_habits = UserHabit.objects.filter(
         is_active=True,
@@ -25,141 +41,164 @@ def check_missed_habits():
     )
     
     for habit in daily_habits:
-        # Skip if completed yesterday
-        if habit.last_completed == yesterday:
-            continue
-        
-        # Skip if already marked as missed
-        if MissedHabit.objects.filter(user_habit=habit, missed_date=yesterday).exists():
-            continue
-        
-        # Mark as missed
-        MissedHabit.objects.create(
-            user_habit=habit,
-            missed_date=yesterday
-        )
-        
-        # Reset streak
-        if habit.streak > 0:
-            # Save old streak for historical records
-            HabitStreak.objects.create(
+        for check_date in dates_to_check:
+            # Skip if already completed on this date
+            if HabitCompletion.objects.filter(
                 user_habit=habit,
-                streak_length=habit.streak,
-                start_date=yesterday - timedelta(days=habit.streak),
-                end_date=yesterday
-            )
-            # Reset current streak
-            habit.streak = 0
-            habit.save()
+                completion_date=check_date
+            ).exists():
+                continue
             
+            # Skip if already marked as missed
+            if MissedHabit.objects.filter(
+                user_habit=habit,
+                missed_date=check_date
+            ).exists():
+                continue
+            
+            # Mark as missed
+            MissedHabit.objects.create(
+                user_habit=habit,
+                missed_date=check_date
+            )
+            
+            # Reset streak if it was active
+            if habit.streak > 0:
+                # Save old streak for historical records
+                streak_start = check_date - timedelta(days=habit.streak)
+                HabitStreak.objects.create(
+                    user_habit=habit,
+                    streak_length=habit.streak,
+                    start_date=streak_start,
+                    end_date=check_date
+                )
+                # Reset current streak
+                habit.streak = 0
+                habit.save()
+    
     # ---------- WEEKLY HABITS ----------
-    # Get the dates for last week (previous Sunday to Saturday)
-    # Using ISO calendar: week starts on Monday (1) and ends on Sunday (7)
-    current_weekday = today.weekday()  # 0=Monday, 6=Sunday
-    last_week_end = today - timedelta(days=current_weekday + 1)  # Last Sunday
-    last_week_start = last_week_end - timedelta(days=6)  # Last Monday
-    
-    # Get all active weekly habits
-    weekly_habits = UserHabit.objects.filter(
-        is_active=True,
-        habit__periodicity='WEEKLY'
-    )
-    
-    for habit in weekly_habits:
-        # Check if completed within last week
-        completed_last_week = HabitCompletion.objects.filter(
-            user_habit=habit,
-            completion_date__gte=last_week_start,
-            completion_date__lte=last_week_end
-        ).exists()
+    # Process each week in the date range
+    current_week_start = start_date
+    while current_week_start < today:
+        # Find week boundaries
+        week_start = current_week_start - timedelta(days=current_week_start.weekday())
+        week_end = week_start + timedelta(days=6)
         
-        if completed_last_week:
-            continue
-            
-        # Skip if already marked as missed
-        if MissedHabit.objects.filter(user_habit=habit, missed_date=last_week_end).exists():
-            continue
-            
-        # Mark as missed (using the last day of the week as the missed date)
-        MissedHabit.objects.create(
-            user_habit=habit,
-            missed_date=last_week_end
+        if week_end >= today:
+            break
+        
+        weekly_habits = UserHabit.objects.filter(
+            is_active=True,
+            habit__periodicity='WEEKLY'
         )
         
-        # Reset streak
-        if habit.streak > 0:
-            # Save streak history
-            HabitStreak.objects.create(
+        for habit in weekly_habits:
+            # Check if completed within this week
+            completed_this_week = HabitCompletion.objects.filter(
                 user_habit=habit,
-                streak_length=habit.streak,
-                start_date=last_week_end - timedelta(weeks=habit.streak),
-                end_date=last_week_end
-            )
-            # Reset current streak
-            habit.streak = 0
-            habit.save()
+                completion_date__gte=week_start,
+                completion_date__lte=week_end
+            ).exists()
             
-    # ---------- MONTHLY HABITS ----------
-    # Determine last month's date range
-    today_day = today.day
-    first_of_this_month = today.replace(day=1)
-    last_of_previous_month = first_of_this_month - timedelta(days=1)
-    first_of_previous_month = last_of_previous_month.replace(day=1)
-    
-    # Get all active monthly habits
-    monthly_habits = UserHabit.objects.filter(
-        is_active=True,
-        habit__periodicity='MONTHLY'
-    )
-    
-    for habit in monthly_habits:
-        # Check if completed within last month
-        completed_last_month = HabitCompletion.objects.filter(
-            user_habit=habit,
-            completion_date__gte=first_of_previous_month,
-            completion_date__lte=last_of_previous_month
-        ).exists()
-        
-        if completed_last_month:
-            continue
-            
-        # Skip if already marked as missed
-        if MissedHabit.objects.filter(user_habit=habit, missed_date=last_of_previous_month).exists():
-            continue
-            
-        # Mark as missed (using the last day of the month as the missed date)
-        MissedHabit.objects.create(
-            user_habit=habit,
-            missed_date=last_of_previous_month
-        )
-        
-        # Reset streak
-        if habit.streak > 0:
-            # Calculate approximated start date (month calculations can be tricky)
-            # This is a simplification - in real app you might need more precise calculations
-            streak_start = last_of_previous_month
-            for _ in range(habit.streak):
-                # Go back one month (approximately)
-                month = streak_start.month - 1
-                year = streak_start.year
-                if month == 0:
-                    month = 12
-                    year -= 1
+            if completed_this_week:
+                continue
                 
-                # Try to use the same day, but adjust if the month doesn't have that day
-                day = min(streak_start.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
-                streak_start = streak_start.replace(year=year, month=month, day=day)
-            
-            # Save streak history
-            HabitStreak.objects.create(
+            # Skip if already marked as missed
+            if MissedHabit.objects.filter(
                 user_habit=habit,
-                streak_length=habit.streak,
-                start_date=streak_start,
-                end_date=last_of_previous_month
+                missed_date=week_end
+            ).exists():
+                continue
+                
+            # Mark as missed
+            MissedHabit.objects.create(
+                user_habit=habit,
+                missed_date=week_end
             )
-            # Reset current streak
-            habit.streak = 0
-            habit.save()
+            
+            # Reset streak if it was active
+            if habit.streak > 0:
+                # Save streak history
+                streak_start = week_end - timedelta(weeks=habit.streak)
+                HabitStreak.objects.create(
+                    user_habit=habit,
+                    streak_length=habit.streak,
+                    start_date=streak_start,
+                    end_date=week_end
+                )
+                # Reset current streak
+                habit.streak = 0
+                habit.save()
+        
+        current_week_start += timedelta(days=7)
+    
+    # ---------- MONTHLY HABITS ----------
+    # Process each month in the date range
+    current_month = start_date
+    while current_month < today:
+        # Find month boundaries
+        month_start = current_month.replace(day=1)
+        next_month = (month_start + timedelta(days=32)).replace(day=1)
+        month_end = next_month - timedelta(days=1)
+        
+        if month_end >= today:
+            break
+        
+        monthly_habits = UserHabit.objects.filter(
+            is_active=True,
+            habit__periodicity='MONTHLY'
+        )
+        
+        for habit in monthly_habits:
+            # Check if completed within this month
+            completed_this_month = HabitCompletion.objects.filter(
+                user_habit=habit,
+                completion_date__gte=month_start,
+                completion_date__lte=month_end
+            ).exists()
+            
+            if completed_this_month:
+                continue
+                
+            # Skip if already marked as missed
+            if MissedHabit.objects.filter(
+                user_habit=habit,
+                missed_date=month_end
+            ).exists():
+                continue
+                
+            # Mark as missed
+            MissedHabit.objects.create(
+                user_habit=habit,
+                missed_date=month_end
+            )
+            
+            # Reset streak if it was active
+            if habit.streak > 0:
+                # Calculate streak start date
+                streak_start = month_end
+                for _ in range(habit.streak):
+                    month = streak_start.month - 1
+                    year = streak_start.year
+                    if month == 0:
+                        month = 12
+                        year -= 1
+                    
+                    day = min(streak_start.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
+                    streak_start = streak_start.replace(year=year, month=month, day=day)
+                
+                # Save streak history
+                HabitStreak.objects.create(
+                    user_habit=habit,
+                    streak_length=habit.streak,
+                    start_date=streak_start,
+                    end_date=month_end
+                )
+                # Reset current streak
+                habit.streak = 0
+                habit.save()
+        
+        current_month = next_month
 
 
 def check_and_send_notifications():
